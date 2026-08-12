@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificador de Comidas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171c;
+    --surface:#1b1f26;
+    --surface-alt:#20252d;
+    --border:#2a303a;
+    --text:#eef1f4;
+    --text-dim:#8d97a3;
+    --accent:#c9ff3d;
+    --accent-dim:rgba(201,255,61,0.14);
+    --p-color:#c9ff3d;
+    --f-color:#ffb454;
+    --c-color:#5ec8f2;
+    --fb-color:#34d399;
+    --warn:#ff6b57;
+    --warn-dim:rgba(255,107,87,0.14);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:0 0 70px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:820px;margin:0 auto;padding:28px 18px 0;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 6px;}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:.02em;margin:0 0 4px;line-height:1;}
+  .subtitle{color:var(--text-dim);font-size:13.5px;margin:0 0 20px;line-height:1.5;}
+
+  .plan-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+  .plan-card h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em;margin:0 0 10px;color:var(--text-dim);}
+  .macro-strip{display:flex;gap:8px;flex-wrap:wrap;}
+  .macro-chip{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border-radius:8px;background:var(--surface-alt);border:1px solid var(--border);}
+  .macro-chip b{color:var(--text);}
+  .macro-chip.kcal{color:var(--text);}
+  .macro-chip.p{color:var(--p-color);}
+  .macro-chip.f{color:var(--f-color);}
+  .macro-chip.c{color:var(--c-color);}
+  .macro-chip.fb{color:var(--fb-color);}
+
+  table.split{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px;}
+  table.split th, table.split td{padding:7px 6px;text-align:left;border-bottom:1px solid var(--border);}
+  table.split th{color:var(--text-dim);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;}
+  table.split td.num{font-family:'JetBrains Mono',monospace;}
+
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:22px;}
+  .ctrl-group{display:flex;flex-direction:column;gap:5px;}
+  .ctrl-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
+  .days-input{width:70px;background:var(--surface-alt);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 8px;font-size:14px;font-family:'JetBrains Mono',monospace;}
+  .unit-toggle{display:flex;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .unit-toggle button{background:none;border:none;color:var(--text-dim);font-size:12px;padding:7px 12px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;}
+  .unit-toggle button.active{background:var(--accent);color:#0e1207;}
+
+  .legend{font-size:11px;color:var(--text-dim);margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:4px;}
+  .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+  .meal-section{margin-bottom:26px;}
+  .meal-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .meal-head h2{font-family:'Bebas Neue',sans-serif;font-size:28px;margin:0;letter-spacing:.02em;}
+  .meal-target{font-size:11.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+  .status-pill{font-size:11px;font-family:'JetBrains Mono',monospace;padding:5px 10px;border-radius:100px;border:1px solid var(--border);}
+  .status-pill.ok{color:var(--accent);border-color:var(--accent);background:var(--accent-dim);}
+  .status-pill.warn{color:var(--f-color);border-color:var(--f-color);background:rgba(255,180,84,0.1);}
+  .status-pill.bad{color:var(--warn);border-color:var(--warn);background:var(--warn-dim);}
+
+  .recipe-grid{display:flex;flex-direction:column;gap:10px;}
+  .recipe-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  .recipe-card.active{border-color:rgba(201,255,61,0.35);background:linear-gradient(180deg, rgba(201,255,61,0.04), var(--surface) 45%);}
+  .recipe-top{display:flex;gap:12px;align-items:flex-start;}
+  .recipe-check{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;background:transparent;margin-top:2px;transition:all .15s;}
+  .recipe-check.on{background:var(--accent);border-color:var(--accent);}
+  .recipe-check svg{width:13px;height:13px;opacity:0;transform:scale(.5);transition:all .15s;}
+  .recipe-check.on svg{opacity:1;transform:scale(1);}
+  .recipe-body{flex:1;min-width:0;}
+  .recipe-name-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .recipe-name{font-size:14.5px;font-weight:700;}
+  .days-field{display:flex;align-items:center;gap:6px;}
+  .days-field label{font-size:10.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+  .days-field input{width:52px;background:var(--surface-alt);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:5px 6px;font-size:13px;font-family:'JetBrains Mono',monospace;}
+  .days-field input:disabled{opacity:.35;}
+
+  .macro-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .pill{font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:3px 7px;border-radius:100px;border:1px solid var(--border);}
+  .pill.kcal{color:var(--text-dim);}
+  .pill.p{color:var(--p-color);border-color:rgba(201,255,61,.3);}
+  .pill.f{color:var(--f-color);border-color:rgba(255,180,84,.3);}
+  .pill.c{color:var(--c-color);border-color:rgba(94,200,242,.3);}
+  .pill.fb{color:var(--fb-color);border-color:rgba(52,211,153,.3);}
+
+  .ing-toggle{margin-top:9px;font-size:11.5px;color:var(--text-dim);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-family:'Inter',sans-serif;}
+  .ing-toggle:hover{color:var(--accent);}
+  .ing-panel{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);}
+  .ing-panel.open{display:block;}
+  .ing-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);padding:3px 0;}
+  .ing-row b{color:var(--text);font-weight:500;}
+
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:26px;}
+  .summary-card h2{font-family:'Bebas Neue',sans-serif;font-size:26px;margin:0 0 4px;}
+  .summary-card .note{font-size:12px;color:var(--text-dim);margin-bottom:12px;}
+
+  .shop-list{margin-top:26px;}
+  .shop-cat{margin-bottom:16px;}
+  .shop-cat h4{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin:0 0 8px;}
+  .shop-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .shop-item span.qty{font-family:'JetBrains Mono',monospace;color:var(--text-dim);}
+
+  .warn-box{font-size:12px;color:var(--f-color);background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.3);border-radius:10px;padding:10px 12px;margin-bottom:14px;}
+
+  .loading{padding:60px 20px;text-align:center;color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Plan Nutricional · 4 comidas</p>
+  <h1>Planificador de Comidas</h1>
+  <p class="subtitle">Elige recetas por comida, asigna cuántos días haces cada una, y obtén la lista total de ingredientes para todo el período.</p>
+
+  <div id="app" class="loading">Cargando tu planificador…</div>
+</div>
+
+<script>
+(function(){
+
+  // ---------- DATOS BASE ----------
+  const PLAN = { kcal:2104, p:150, f:118, c:106, fb:27 };
+  const SPLIT = { desayuno:0.25, almuerzo:0.35, merienda:0.15, cena:0.25 };
+  const MEAL_LABELS = { desayuno:'Desayuno', almuerzo:'Almuerzo', merienda:'Merienda', cena:'Cena' };
+  const CAT_LABELS = { proteina:'Proteínas', carbohidrato:'Carbohidratos', grasa:'Grasas', vegetal:'Vegetales', fruta:'Frutas', lacteo:'Lácteos' };
+
+  const DB = {
+    avena:{name:'Avena en hojuelas',unit:'g',kcal:389,p:16.9,f:6.9,c:66,fb:10.6,cat:'carbohidrato',portion:{g:40,label:'1/2 taza'}},
+    proteina:{name:'Proteína en polvo',unit:'g',kcal:380,p:80,f:5,c:8,fb:0,cat:'proteina',portion:{g:30,label:'1 scoop'}},
+    almendras:{name:'Almendras',unit:'g',kcal:579,p:21,f:50,c:22,fb:12.5,cat:'grasa',portion:{g:14,label:'1 cda (~10 unid.)'}},
+    mantequilla_mani:{name:'Mantequilla de maní',unit:'g',kcal:588,p:25,f:50,c:20,fb:6,cat:'grasa',portion:{g:16,label:'1 cda'}},
+    leche_coco:{name:'Leche de coco (lata)',unit:'ml',kcal:230,p:2.3,f:24,c:5.5,fb:0,cat:'grasa',portion:{g:60,label:'1/4 taza'}},
+    huevo:{name:'Huevo entero',unit:'g',kcal:155,p:13,f:11,c:1.1,fb:0,cat:'proteina',portion:{g:50,label:'1 unidad'}},
+    aguacate:{name:'Aguacate',unit:'g',kcal:160,p:2,f:15,c:8.5,fb:6.7,cat:'grasa',portion:{g:50,label:'1/4 unidad mediana'}},
+    queso_cheddar:{name:'Queso cheddar',unit:'g',kcal:403,p:25,f:33,c:1.3,fb:0,cat:'lacteo',portion:{g:30,label:'1 tajada'}},
+    clara:{name:'Clara de huevo',unit:'g',kcal:52,p:11,f:0.2,c:0.7,fb:0,cat:'proteina',portion:{g:33,label:'1 unidad'}},
+    yogur_griego:{name:'Yogur griego natural',unit:'g',kcal:73,p:10,f:2,c:3.6,fb:0,cat:'lacteo',portion:{g:170,label:'1 taza'}},
+    frutos_rojos:{name:'Frutos rojos mixtos',unit:'g',kcal:50,p:0.7,f:0.3,c:12,fb:3,cat:'fruta',portion:{g:75,label:'1/2 taza'}},
+    chia:{name:'Chía',unit:'g',kcal:486,p:17,f:31,c:42,fb:34,cat:'grasa',portion:{g:12,label:'1 cda'}},
+    nueces:{name:'Nueces',unit:'g',kcal:654,p:15,f:65,c:14,fb:6.7,cat:'grasa',portion:{g:14,label:'1 cda (~4 mitades)'}},
+    pollo:{name:'Pechuga de pollo',unit:'g',kcal:165,p:31,f:3.6,c:0,fb:0,cat:'proteina',portion:{g:150,label:'1 pechuga mediana'}},
+    arroz:{name:'Arroz blanco cocido',unit:'g',kcal:130,p:2.7,f:0.3,c:28,fb:0.4,cat:'carbohidrato',portion:{g:75,label:'1/2 taza'}},
+    brocoli:{name:'Brócoli',unit:'g',kcal:35,p:2.4,f:0.4,c:7,fb:3.3,cat:'vegetal',portion:{g:75,label:'1/2 taza'}},
+    carne_molida:{name:'Carne molida 90/10',unit:'g',kcal:217,p:26,f:12,c:0,fb:0,cat:'proteina',portion:{g:120,label:'1 porción'}},
+    batata:{name:'Batata / camote',unit:'g',kcal:90,p:2,f:0.1,c:21,fb:3.3,cat:'carbohidrato',portion:{g:150,label:'1 unidad mediana'}},
+    lechugas:{name:'Mix de lechugas',unit:'g',kcal:15,p:1.4,f:0.2,c:2.9,fb:1.3,cat:'vegetal',portion:{g:85,label:'2 tazas'}},
+    aceite_oliva:{name:'Aceite de oliva',unit:'ml',kcal:884,p:0,f:100,c:0,fb:0,cat:'grasa',portion:{g:7,label:'1/2 cda'}},
+    tomate:{name:'Tomate',unit:'g',kcal:18,p:0.9,f:0.2,c:3.9,fb:1.2,cat:'vegetal',portion:{g:100,label:'1 unidad mediana'}},
+    salmon:{name:'Salmón',unit:'g',kcal:208,p:20,f:13,c:0,fb:0,cat:'proteina',portion:{g:120,label:'1 filete pequeño'}},
+    quinoa:{name:'Quinoa cocida',unit:'g',kcal:120,p:4.4,f:1.9,c:21,fb:2.8,cat:'carbohidrato',portion:{g:155,label:'1 taza'}},
+    espinaca:{name:'Espinaca',unit:'g',kcal:23,p:2.9,f:0.4,c:3.6,fb:2.2,cat:'vegetal',portion:{g:30,label:'1 puñado'}},
+    frijoles_negros:{name:'Fríjoles negros cocidos',unit:'g',kcal:132,p:8.9,f:0.5,c:24,fb:8.7,cat:'carbohidrato',portion:{g:170,label:'1 taza'}},
+    pimenton:{name:'Pimentón',unit:'g',kcal:31,p:1,f:0.3,c:6,fb:1.7,cat:'vegetal',portion:{g:100,label:'1 unidad mediana'}},
+    atun:{name:'Atún en agua (lata)',unit:'g',kcal:116,p:26,f:1,c:0,fb:0,cat:'proteina',portion:{g:120,label:'1 lata escurrida'}},
+    pepino:{name:'Pepino',unit:'g',kcal:15,p:0.6,f:0.1,c:3.6,fb:0.5,cat:'vegetal',portion:{g:100,label:'1/2 unidad'}},
+    queso_cottage:{name:'Queso cottage',unit:'g',kcal:98,p:11,f:4.3,c:3.4,fb:0,cat:'lacteo',portion:{g:113,label:'1/2 taza'}},
+    manzana:{name:'Manzana',unit:'g',kcal:52,p:0.3,f:0.2,c:13.8,fb:2.4,cat:'fruta',portion:{g:150,label:'1 unidad mediana'}},
+    banano:{name:'Banano',unit:'g',kcal:89,p:1.1,f:0.3,c:23,fb:2.6,cat:'fruta',portion:{g:118,label:'1 unidad mediana'}},
+    aceite_coco:{name:'Aceite de coco',unit:'ml',kcal:862,p:0,f:100,c:0,fb:0,cat:'grasa',portion:{g:14,label:'1 cda'}},
+    calabacin:{name:'Calabacín',unit:'g',kcal:17,p:1.2,f:0.3,c:3.1,fb:1,cat:'vegetal',portion:{g:100,label:'1 unidad mediana'}},
+    pavo:{name:'Pechuga de pavo',unit:'g',kcal:135,p:30,f:1,c:0,fb:0,cat:'proteina',portion:{g:120,label:'1 porción'}},
+  };
+
+  const RECIPES = {
+    desayuno:[
+      {id:'d1', name:'Bowl de avena proteica con almendras y coco', ing:[['avena',35],['proteina',30],['almendras',14],['mantequilla_mani',16],['leche_coco',40]]},
+      {id:'d2', name:'Huevos con aguacate y queso', ing:[['huevo',150],['clara',66],['aguacate',70],['queso_cheddar',20]]},
+      {id:'d3', name:'Yogur griego con frutos rojos y nueces', ing:[['yogur_griego',170],['frutos_rojos',75],['chia',12],['nueces',14],['proteina',15],['almendras',14]]},
+      {id:'d4', name:'Tortilla de claras con espinaca, cottage y aguacate', ing:[['clara',200],['huevo',50],['espinaca',30],['queso_cottage',113],['aceite_oliva',7],['aguacate',70],['frutos_rojos',75]]},
+      {id:'d5', name:'Batido de banano y mantequilla de maní', ing:[['proteina',30],['banano',118],['mantequilla_mani',16],['avena',20],['leche_coco',40]]},
+      {id:'d6', name:'Omelette de pavo y pimentón', ing:[['huevo',150],['pavo',60],['pimenton',50],['queso_cheddar',20],['aceite_oliva',7],['batata',50]]},
+    ],
+    almuerzo:[
+      {id:'a1', name:'Pollo con arroz, brócoli y aguacate', ing:[['pollo',150],['arroz',100],['brocoli',150],['aguacate',70],['nueces',14]]},
+      {id:'a2', name:'Salmón con quinoa y espinaca', ing:[['salmon',180],['quinoa',155],['espinaca',30],['aceite_oliva',7],['almendras',14]]},
+      {id:'a3', name:'Carne con batata y ensalada', ing:[['carne_molida',150],['batata',150],['lechugas',85],['aceite_oliva',14],['tomate',100],['nueces',14]]},
+      {id:'a4', name:'Bowl de atún, fríjoles y aguacate', ing:[['atun',120],['frijoles_negros',170],['aguacate',100],['pimenton',100],['aceite_oliva',14],['almendras',14]]},
+      {id:'a5', name:'Pollo con vegetales salteados, queso y arroz', ing:[['pollo',150],['calabacin',100],['pimenton',100],['queso_cheddar',30],['aceite_oliva',14],['arroz',75],['aguacate',70]]},
+      {id:'a6', name:'Carne con quinoa y ensalada fresca', ing:[['carne_molida',150],['quinoa',155],['pepino',100],['tomate',100],['aceite_oliva',14],['nueces',14]]},
+    ],
+    merienda:[
+      {id:'m1', name:'Yogur con almendras y frutos rojos', ing:[['yogur_griego',170],['almendras',14],['frutos_rojos',75],['mantequilla_mani',8]]},
+      {id:'m2', name:'Batido de proteína con coco y frutos rojos', ing:[['proteina',30],['leche_coco',60],['frutos_rojos',75],['chia',6]]},
+      {id:'m3', name:'Huevos con palta y cottage', ing:[['huevo',100],['aguacate',70],['clara',33],['queso_cottage',56]]},
+      {id:'m4', name:'Barra casera de avena y maní', ing:[['avena',20],['mantequilla_mani',16],['proteina',15],['chia',6],['almendras',10]]},
+      {id:'m5', name:'Cottage con nueces y manzana', ing:[['queso_cottage',113],['nueces',14],['manzana',75],['proteina',10]]},
+      {id:'m6', name:'Batido verde con espinaca y maní', ing:[['espinaca',30],['proteina',30],['mantequilla_mani',8],['banano',60],['aceite_coco',7],['almendras',8]]},
+    ],
+    cena:[
+      {id:'c1', name:'Salmón con brócoli y batata', ing:[['salmon',150],['brocoli',150],['aceite_oliva',7],['batata',100]]},
+      {id:'c2', name:'Pollo con ensalada de aguacate y queso', ing:[['pollo',150],['lechugas',85],['aguacate',100],['queso_cheddar',20],['aceite_oliva',7]]},
+      {id:'c3', name:'Carne con quinoa y calabacín', ing:[['carne_molida',120],['quinoa',100],['calabacin',100],['aceite_oliva',7],['almendras',10]]},
+      {id:'c4', name:'Ensalada completa de atún', ing:[['atun',120],['lechugas',85],['tomate',100],['pepino',100],['aguacate',70],['aceite_oliva',7],['queso_cheddar',20],['nueces',14]]},
+      {id:'c5', name:'Pavo con batata y brócoli', ing:[['pavo',150],['batata',100],['brocoli',100],['aceite_oliva',7],['aguacate',70],['almendras',10]]},
+      {id:'c6', name:'Tortilla de huevo con queso, espinaca y camote', ing:[['huevo',150],['clara',66],['queso_cheddar',20],['espinaca',30],['lechugas',85],['tomate',100],['aceite_oliva',14],['batata',50]]},
+    ],
+  };
+
+  // ---------- CALCULOS ----------
+  function mealTarget(mealKey){
+    const s = SPLIT[mealKey];
+    return { kcal:PLAN.kcal*s, p:PLAN.p*s, f:PLAN.f*s, c:PLAN.c*s, fb:PLAN.fb*s };
+  }
+
+  function recipeMacros(recipe){
+    let m = {kcal:0,p:0,f:0,c:0,fb:0};
+    recipe.ing.forEach(([ingId, g]) => {
+      const d = DB[ingId];
+      const factor = g/100;
+      m.kcal += d.kcal*factor; m.p += d.p*factor; m.f += d.f*factor; m.c += d.c*factor; m.fb += d.fb*factor;
+    });
+    return m;
+  }
+
+  function fmtQty(ingId, grams, mode){
+    const d = DB[ingId];
+    if(mode === 'portions'){
+      let n = grams / d.portion.g;
+      n = Math.round(n*2)/2;
+      if(n <= 0) n = 0.5;
+      return n + (n===1?' porción':' porciones') + ' (' + d.portion.label + ')';
+    }
+    const unit = d.unit === 'ml' ? 'ml' : 'g';
+    return Math.round(grams) + ' ' + unit;
+  }
+
+  function fmtQtyCoarse(ingId, grams, mode){
+    if(mode === 'portions') return fmtQty(ingId, grams, mode);
+    const d = DB[ingId];
+    const unit = d.unit === 'ml' ? 'ml' : 'g';
+    return (Math.round(grams/5)*5) + ' ' + unit;
+  }
+
+  function round1(n){ return Math.round(n*10)/10; }
+
+  // ---------- ESTADO ----------
+  let state = {
+    totalDays: 15,
+    unitMode: 'grams',
+    sel: { desayuno:{}, almuerzo:{}, merienda:{}, cena:{} } // sel[meal][recipeId] = {on:bool, days:number}
+  };
+
+  async function loadState(){
+    try{
+      const res = await window.storage.get('nutrition-planner-state', false);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state.totalDays = parsed.totalDays || 15;
+        state.unitMode = parsed.unitMode || 'grams';
+        state.sel = parsed.sel || state.sel;
+      }
+    }catch(e){ /* sin datos previos */ }
+  }
+  async function persist(){
+    try{ await window.storage.set('nutrition-planner-state', JSON.stringify(state), false); }
+    catch(e){ console.error('No se pudo guardar', e); }
+  }
+
+  function getSel(meal, id){
+    if(!state.sel[meal][id]) state.sel[meal][id] = {on:false, days:0};
+    return state.sel[meal][id];
+  }
+
+  function mealAssignedDays(meal){
+    let sum = 0;
+    Object.values(state.sel[meal]).forEach(s => { if(s.on) sum += (s.days||0); });
+    return sum;
+  }
+
+  // ---------- RENDER ----------
+  const app = document.getElementById('app');
+
+  function checkIcon(){
+    return `<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#0e1207" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function renderPlanCard(){
+    let rows = '';
+    Object.keys(MEAL_LABELS).forEach(mk => {
+      const t = mealTarget(mk);
+      rows += `<tr><td>${MEAL_LABELS[mk]}</td>
+        <td class="num">${Math.round(t.kcal)}</td>
+        <td class="num">${round1(t.p)}g</td>
+        <td class="num">${round1(t.f)}g</td>
+        <td class="num">${round1(t.c)}g</td>
+        <td class="num">${round1(t.fb)}g</td></tr>`;
+    });
+    return `
+      <div class="plan-card">
+        <h3>Tu plan diario</h3>
+        <div class="macro-strip">
+          <span class="macro-chip kcal"><b>${PLAN.kcal}</b> kcal</span>
+          <span class="macro-chip p"><b>${PLAN.p}g</b> proteína</span>
+          <span class="macro-chip f"><b>${PLAN.f}g</b> grasas</span>
+          <span class="macro-chip c"><b>${PLAN.c}g</b> carbohidratos</span>
+          <span class="macro-chip fb"><b>${PLAN.fb}g</b> fibra</span>
+        </div>
+        <table class="split">
+          <thead><tr><th>Comida</th><th>Kcal</th><th>Prot</th><th>Grasa</th><th>Carb</th><th>Fibra</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderControls(){
+    return `
+      <div class="controls">
+        <div class="ctrl-group">
+          <div class="ctrl-label">Duración del plan</div>
+          <input type="number" min="1" max="60" class="days-input" id="totalDaysInput" value="${state.totalDays}"> <span style="font-size:12px;color:var(--text-dim)">días</span>
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">Unidades</div>
+          <div class="unit-toggle">
+            <button data-mode="grams" class="${state.unitMode==='grams'?'active':''}">g / ml</button>
+            <button data-mode="portions" class="${state.unitMode==='portions'?'active':''}">Porciones</button>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--p-color)"></i>Proteína</span>
+          <span><i style="background:var(--f-color)"></i>Grasa</span>
+          <span><i style="background:var(--c-color)"></i>Carbs</span>
+          <span><i style="background:var(--fb-color)"></i>Fibra</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function statusPill(meal){
+    const assigned = mealAssignedDays(meal);
+    const total = state.totalDays;
+    if(assigned === total && total>0) return `<span class="status-pill ok">${assigned}/${total} días ✓ completo</span>`;
+    if(assigned > total) return `<span class="status-pill bad">${assigned}/${total} días — sobran ${assigned-total}</span>`;
+    return `<span class="status-pill warn">${assigned}/${total} días — faltan ${total-assigned}</span>`;
+  }
+
+  function renderRecipeCard(meal, recipe){
+    const s = getSel(meal, recipe.id);
+    const m = recipeMacros(recipe);
+    let ingHtml = '';
+    recipe.ing.forEach(([ingId, g]) => {
+      ingHtml += `<div class="ing-row"><span>${DB[ingId].name}</span><b>${fmtQty(ingId, g, state.unitMode)}</b></div>`;
+    });
+    return `
+      <div class="recipe-card ${s.on?'active':''}" data-meal="${meal}" data-id="${recipe.id}">
+        <div class="recipe-top">
+          <button class="recipe-check ${s.on?'on':''}" data-role="check">${checkIcon()}</button>
+          <div class="recipe-body">
+            <div class="recipe-name-row">
+              <div class="recipe-name">${recipe.name}</div>
+              <div class="days-field">
+                <label>Días</label>
+                <input type="number" min="0" max="${state.totalDays}" value="${s.days}" data-role="days" ${s.on?'':'disabled'}>
+              </div>
+            </div>
+            <div class="macro-pills">
+              <span class="pill kcal">${Math.round(m.kcal)} kcal</span>
+              <span class="pill p">P ${round1(m.p)}g</span>
+              <span class="pill f">G ${round1(m.f)}g</span>
+              <span class="pill c">C ${round1(m.c)}g</span>
+              <span class="pill fb">Fib ${round1(m.fb)}g</span>
+            </div>
+            <button class="ing-toggle" data-role="ingtoggle">Ver ingredientes ▾</button>
+            <div class="ing-panel" data-role="ingpanel">${ingHtml}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMealSection(meal){
+    const t = mealTarget(meal);
+    let cards = '';
+    RECIPES[meal].forEach(r => { cards += renderRecipeCard(meal, r); });
+    return `
+      <div class="meal-section" data-meal-section="${meal}">
+        <div class="meal-head">
+          <div>
+            <h2>${MEAL_LABELS[meal]}</h2>
+            <div class="meal-target">Objetivo: ~${Math.round(t.kcal)} kcal · P${round1(t.p)}g · G${round1(t.f)}g · C${round1(t.c)}g · Fib${round1(t.fb)}g</div>
+          </div>
+          <div data-role="statuspill">${statusPill(meal)}</div>
+        </div>
+        <div class="recipe-grid">${cards}</div>
+      </div>
+    `;
+  }
+
+  function computePeriodTotals(){
+    let totals = {kcal:0,p:0,f:0,c:0,fb:0};
+    let shopping = {}; // ingId -> grams
+    let anyIncomplete = false;
+
+    Object.keys(RECIPES).forEach(meal => {
+      if(mealAssignedDays(meal) !== state.totalDays) anyIncomplete = true;
+      RECIPES[meal].forEach(r => {
+        const s = getSel(meal, r.id);
+        if(s.on && s.days > 0){
+          const m = recipeMacros(r);
+          totals.kcal += m.kcal * s.days;
+          totals.p += m.p * s.days;
+          totals.f += m.f * s.days;
+          totals.c += m.c * s.days;
+          totals.fb += m.fb * s.days;
+          r.ing.forEach(([ingId, g]) => {
+            shopping[ingId] = (shopping[ingId]||0) + g * s.days;
+          });
+        }
+      });
+    });
+    return { totals, shopping, anyIncomplete };
+  }
+
+  function renderSummaryAndShopping(){
+    const { totals, shopping, anyIncomplete } = computePeriodTotals();
+    const days = state.totalDays || 1;
+    const avg = { kcal:totals.kcal/days, p:totals.p/days, f:totals.f/days, c:totals.c/days, fb:totals.fb/days };
+
+    let warnHtml = anyIncomplete ? `<div class="warn-box">⚠️ Todavía no has asignado ${state.totalDays} días en todas las comidas. Los totales de abajo solo reflejan lo que ya has configurado.</div>` : '';
+
+    // agrupar shopping por categoría
+    const groups = {};
+    Object.keys(shopping).forEach(ingId => {
+      const cat = DB[ingId].cat;
+      if(!groups[cat]) groups[cat] = [];
+      groups[cat].push(ingId);
+    });
+
+    let shopHtml = '';
+    if(Object.keys(shopping).length === 0){
+      shopHtml = `<p style="color:var(--text-dim);font-size:13px;">Selecciona al menos una receta con días asignados para ver tu lista de compras.</p>`;
+    } else {
+      Object.keys(CAT_LABELS).forEach(cat => {
+        if(!groups[cat]) return;
+        let items = '';
+        groups[cat].sort((a,b) => DB[a].name.localeCompare(DB[b].name)).forEach(ingId => {
+          items += `<div class="shop-item"><span>${DB[ingId].name}</span><span class="qty">${fmtQtyCoarse(ingId, shopping[ingId], state.unitMode)}</span></div>`;
+        });
+        shopHtml += `<div class="shop-cat"><h4>${CAT_LABELS[cat]}</h4>${items}</div>`;
+      });
+    }
+
+    return `
+      <div class="summary-card">
+        <h2>Resumen del período (${state.totalDays} días)</h2>
+        <div class="note">Promedio diario según lo que has configurado, comparado con tu plan.</div>
+        <table class="split">
+          <thead><tr><th></th><th>Kcal</th><th>Prot</th><th>Grasa</th><th>Carb</th><th>Fibra</th></tr></thead>
+          <tbody>
+            <tr><td>Tu plan</td><td class="num">${PLAN.kcal}</td><td class="num">${PLAN.p}g</td><td class="num">${PLAN.f}g</td><td class="num">${PLAN.c}g</td><td class="num">${PLAN.fb}g</td></tr>
+            <tr><td>Promedio configurado</td><td class="num">${Math.round(avg.kcal)}</td><td class="num">${round1(avg.p)}g</td><td class="num">${round1(avg.f)}g</td><td class="num">${round1(avg.c)}g</td><td class="num">${round1(avg.fb)}g</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="shop-list">
+        <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;margin:0 0 4px;">Lista de compras total</h2>
+        <div class="note" style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">Cantidades acumuladas para ${state.totalDays} días, según las recetas y días que asignaste.</div>
+        ${warnHtml}
+        ${shopHtml}
+      </div>
+    `;
+  }
+
+  function renderAll(){
+    let html = renderPlanCard() + renderControls();
+    Object.keys(MEAL_LABELS).forEach(mk => { html += renderMealSection(mk); });
+    html += renderSummaryAndShopping();
+    app.innerHTML = html;
+    bindEvents();
+  }
+
+  function bindEvents(){
+    document.getElementById('totalDaysInput').addEventListener('change', async (e) => {
+      let v = parseInt(e.target.value, 10);
+      if(isNaN(v) || v < 1) v = 1;
+      if(v > 60) v = 60;
+      state.totalDays = v;
+      renderAll();
+      await persist();
+    });
+
+    document.querySelectorAll('.unit-toggle button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        state.unitMode = btn.getAttribute('data-mode');
+        renderAll();
+        await persist();
+      });
+    });
+
+    document.querySelectorAll('.recipe-card').forEach(card => {
+      const meal = card.getAttribute('data-meal');
+      const id = card.getAttribute('data-id');
+      const s = getSel(meal, id);
+
+      card.querySelector('[data-role="check"]').addEventListener('click', async () => {
+        s.on = !s.on;
+        if(s.on && s.days === 0) s.days = 1;
+        renderAll();
+        await persist();
+      });
+
+      const daysInput = card.querySelector('[data-role="days"]');
+      daysInput.addEventListener('change', async (e) => {
+        let v = parseInt(e.target.value, 10);
+        if(isNaN(v) || v < 0) v = 0;
+        s.days = v;
+        renderAll();
+        await persist();
+      });
+
+      card.querySelector('[data-role="ingtoggle"]').addEventListener('click', () => {
+        card.querySelector('[data-role="ingpanel"]').classList.toggle('open');
+      });
+    });
+  }
+
+  (async function init(){
+    await loadState();
+    renderAll();
+  })();
+})();
+</script>
+</body>
+</html>
